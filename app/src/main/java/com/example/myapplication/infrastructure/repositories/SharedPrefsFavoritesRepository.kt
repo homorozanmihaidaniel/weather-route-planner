@@ -36,7 +36,7 @@ class SharedPrefsFavoritesRepository(context: Context) : IFavoritesRepository {
 
     override fun addFavorite(favorite: LocatieFavorita): List<LocatieFavorita> {
         val current = getFavorites().toMutableList()
-        current.removeAll { it.adresaSauNume.equals(favorite.adresaSauNume, ignoreCase = true) }
+        current.removeAll { it.adresaSauNume.trim().equals(favorite.adresaSauNume.trim(), ignoreCase = true) }
         current.add(0, favorite)
         saveFavorites(current)
         return current
@@ -53,7 +53,7 @@ class SharedPrefsFavoritesRepository(context: Context) : IFavoritesRepository {
         if (query.isBlank()) return false
         val clean = query.trim()
         return getFavorites().any {
-            it.adresaSauNume.equals(clean, ignoreCase = true) || it.titlu.equals(clean, ignoreCase = true)
+            it.adresaSauNume.trim().equals(clean, ignoreCase = true) || it.titlu.trim().equals(clean, ignoreCase = true)
         }
     }
 

@@ -127,13 +127,14 @@ class MapState(
     var listaFavorite by mutableStateOf(favoritesRepository.getFavorites())
 
     fun adaugaFavorit(titlu: String, adresa: String) {
-        if (adresa.isNotBlank()) {
-            val curatTitlu = if (titlu.isBlank()) adresa else titlu
+        val cleanAdresa = adresa.trim()
+        if (cleanAdresa.isNotBlank()) {
+            val curatTitlu = if (titlu.isBlank()) cleanAdresa else titlu.trim()
             val item = LocatieFavorita(
                 titlu = curatTitlu,
-                adresaSauNume = adresa.trim(),
-                latitudine = if (adresa == textCautat) pozitiePin?.latitude() else null,
-                longitudine = if (adresa == textCautat) pozitiePin?.longitude() else null
+                adresaSauNume = cleanAdresa,
+                latitudine = if (cleanAdresa == textCautat.trim()) pozitiePin?.latitude() else null,
+                longitudine = if (cleanAdresa == textCautat.trim()) pozitiePin?.longitude() else null
             )
             listaFavorite = favoritesRepository.addFavorite(item)
         }
@@ -144,22 +145,27 @@ class MapState(
     }
 
     fun comutaFavoritCurent() {
-        if (textCautat.isNotBlank()) {
-            if (favoritesRepository.isFavorite(textCautat)) {
-                val existent = listaFavorite.find {
-                    it.adresaSauNume.equals(textCautat, ignoreCase = true) || it.titlu.equals(textCautat, ignoreCase = true)
-                }
-                if (existent != null) {
-                    stergeFavorit(existent.id)
-                }
+        val clean = textCautat.trim()
+        if (clean.isNotBlank()) {
+            val existent = listaFavorite.find {
+                it.adresaSauNume.trim().equals(clean, ignoreCase = true) || it.titlu.trim().equals(clean, ignoreCase = true)
+            }
+            if (existent != null) {
+                stergeFavorit(existent.id)
+                Toast.makeText(context, "Eliminat din favorite", Toast.LENGTH_SHORT).show()
             } else {
-                adaugaFavorit(textCautat, textCautat)
+                adaugaFavorit(clean, clean)
+                Toast.makeText(context, "Adăugat la favorite!", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     fun esteFavorit(query: String): Boolean {
-        return favoritesRepository.isFavorite(query)
+        if (query.isBlank()) return false
+        val clean = query.trim()
+        return listaFavorite.any {
+            it.adresaSauNume.trim().equals(clean, ignoreCase = true) || it.titlu.trim().equals(clean, ignoreCase = true)
+        }
     }
 
     // Filtre Căutare & Hartă
