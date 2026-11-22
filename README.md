@@ -90,7 +90,23 @@ O aplicație Android modernă, construită în **Kotlin** și **Jetpack Compose*
 * **Funcționalitate:** Casetă de căutare interactivă cu auto-completare de adrese, plus salvarea ultimelor 5 căutări efectuate pentru acces rapid.
 * **Implementare:**
   * Căutarea este realizată prin componenta [SearchBar.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/ui/components/SearchBar.kt) integrată cu **Mapbox Search SDK / Geocoding**.
-  * Istoricul este gestionat de [SharedPrefsSearchHistoryRepository.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/data/classes/SharedPrefsSearchHistoryRepository.kt) (care implementează [ISearchHistoryRepository](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/data/interfaces/ISearchHistoryRepository.kt)) folosind stocarea locală **SharedPreferences** din SDK-ul Android.
+  * Istoricul este gestionat de [SharedPrefsSearchHistoryRepository.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/infrastructure/repositories/SharedPrefsSearchHistoryRepository.kt) (care implementează [ISearchHistoryRepository](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/application/interfaces/ISearchHistoryRepository.kt)) folosind stocarea locală **SharedPreferences** din SDK-ul Android.
+
+---
+
+### 🎛️ 10. Filtrare Personalizată a Alertelor și Straturilor (Filter Dialog)
+* **Funcționalitate:** Buton dedicat pentru filtre poziționat lângă bara de căutare, care deschide o căsuță de dialog (`FilterDialog`) unde utilizatorul poate alege exact ce filtre/straturi să fie active la căutare și afișare pe hartă:
+  * 🌦️ **Alerte Meteo pe traseu:** activare/dezactivare globală a tuturor condițiilor meteo (ploaie, ninsoare, ceață, nori).
+  * 🚨 **Incidente Trafic (TomTom):** activare/dezactivare globală a tuturor incidentelor de trafic (accidente, lucrări, blocaje, dopuri trafic, echipaje poliție).
+  * 🚦 **Culori Trafic pe Rută:** comutare între afișarea segmentelor colorate de congestie și traseul simplu.
+  * 🌙 **Tranziție Zi / Noapte:** afișare/ascundere pini și linii de crepuscul și noapte pe traseu.
+  * 🌧️ **Radar Precipitații:** activare/dezactivare strat radar dinamic RainViewer.
+  * 🌍 **Umbră Planetară:** afișare/dezactivare poligoane de noapte pe glob.
+* **Butoane rapide:** Opțiuni de "Activează tot" și "Dezactivează tot" plus badge dinamic pe butonul de filtre care indică numărul de categorii active.
+* **Implementare:**
+  * Modelul de date [FiltreState.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/domain/entities/FiltreState.kt).
+  * Dialogul Compose [FilterDialog.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/ui/components/FilterDialog.kt).
+  * Integrarea în [SearchBar.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/ui/components/SearchBar.kt), [MapState.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/api/controllers/MapState.kt) și [MapScreen.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/ui/components/MapScreen.kt).
 
 ---
 

@@ -12,6 +12,7 @@ import com.example.myapplication.BuildConfig
 import com.example.myapplication.application.interfaces.*
 import com.example.myapplication.application.services.*
 import com.example.myapplication.domain.entities.AlertaMeteo
+import com.example.myapplication.domain.entities.FiltreState
 import com.example.myapplication.domain.entities.RadarFrame
 import com.example.myapplication.domain.entities.TomTomIncident
 import com.example.myapplication.infrastructure.repositories.*
@@ -115,6 +116,33 @@ class MapState(
     var baraEsteFocusata by mutableStateOf(false)
 
     var pozitiePin by mutableStateOf<Point?>(null)
+
+    // Filtre Căutare & Hartă
+    var filtreState by mutableStateOf(FiltreState())
+    var showFilterDialog by mutableStateOf(false)
+    var ultimeleGeometriiRute by mutableStateOf<List<LineString>>(emptyList())
+
+    val alerteMeteoVizibile: List<AlertaMeteo>
+        get() = if (filtreState.arataAlerteMeteo) alerteMeteo else emptyList()
+
+    val incidenteTomTomVizibile: List<TomTomIncident>
+        get() = if (filtreState.arataIncidenteTrafic) incidenteTomTom else emptyList()
+
+    val alerteNoapteVizibile: List<AlertaMeteo>
+        get() = if (filtreState.arataTranzitieZiNoapte) alerteNoapte else emptyList()
+
+    fun comutaFiltruIncidente(activ: Boolean) {
+        filtreState = filtreState.copy(arataIncidenteTrafic = activ)
+        if (activ && toateIncidenteleTomTom.isEmpty() && ultimeleGeometriiRute.isNotEmpty()) {
+            incarcaIncidenteTomTom(ultimeleGeometriiRute)
+        }
+    }
+
+    fun sincronizeazaDupaSchimbareFiltre() {
+        if (filtreState.arataIncidenteTrafic && toateIncidenteleTomTom.isEmpty() && ultimeleGeometriiRute.isNotEmpty()) {
+            incarcaIncidenteTomTom(ultimeleGeometriiRute)
+        }
+    }
 
     fun calculeazaTimpDisponibil(): Double {
         val h = inputOra.toIntOrNull()
@@ -269,7 +297,10 @@ class MapState(
                         }
 
                         val geometries = activeRoutesList.map { it.geoJson }
-                        incarcaIncidenteTomTom(geometries)
+                        ultimeleGeometriiRute = geometries
+                        if (filtreState.arataIncidenteTrafic) {
+                            incarcaIncidenteTomTom(geometries)
+                        }
                     }
                 } else {
                     scope.launch(Dispatchers.Main) {
@@ -350,6 +381,7 @@ class MapState(
         puncteVremeTraseu = emptyList()
         activeRadarUrl = radarFrames.lastOrNull()?.url
         incidenteTomTom = emptyList()
+        ultimeleGeometriiRute = emptyList()
     }
 
     class BBox(

@@ -177,9 +177,9 @@ fun MapScreen(
     LaunchedEffect(state.traseuGeoJson) {
         val traseuSigur = state.traseuGeoJson
         if (traseuSigur != null) {
-            if (state.alerteMeteo.isNotEmpty()) {
+            if (state.alerteMeteoVizibile.isNotEmpty()) {
                 Toast.makeText(context, "Atenție! S-au detectat condiții meteo pe traseu!", Toast.LENGTH_LONG).show()
-            } else {
+            } else if (state.filtreState.arataAlerteMeteo) {
                 Toast.makeText(context, "Traseu perfect curat, vreme excelentă!", Toast.LENGTH_SHORT).show()
             }
         }
@@ -239,12 +239,12 @@ fun MapScreen(
     val currentZoom = state.mapViewportState.cameraState?.zoom ?: 0.0
     val isFlat = currentZoom >= 3.0
 
-    val incidenteFiltrateDupaZoom = remember(state.incidenteTomTom, currentZoom) {
+    val incidenteFiltrateDupaZoom = remember(state.incidenteTomTomVizibile, currentZoom) {
         when {
             currentZoom < 7.5 -> emptyList()
-            currentZoom < 9.5 -> state.incidenteTomTom.take(5)
-            currentZoom < 11.5 -> state.incidenteTomTom.take(15)
-            else -> state.incidenteTomTom
+            currentZoom < 9.5 -> state.incidenteTomTomVizibile.take(5)
+            currentZoom < 11.5 -> state.incidenteTomTomVizibile.take(15)
+            else -> state.incidenteTomTomVizibile
         }
     }
 
@@ -267,9 +267,10 @@ fun MapScreen(
             }
 
             // Efect pentru RainViewer (radar dinamic cu istoric si prezent)
-            MapEffect(state.activeRadarUrl) { mapView ->
+            val radarUrlActiv = if (state.filtreState.arataRadarPrecipitatii) state.activeRadarUrl else null
+            MapEffect(radarUrlActiv) { mapView ->
                 val style = mapView.getMapboxMap().getStyle()
-                val url = state.activeRadarUrl
+                val url = radarUrlActiv
                 if (style != null) {
                     val sursaId = "sursa-ploaie"
                     val stratId = "strat-ploaie"
@@ -358,7 +359,7 @@ fun MapScreen(
             }
 
             // Efect pentru trasee + auto zoom pe traseul selectat
-            MapEffect(state.toateTraseele, state.indexTraseuSelectat) { mapView ->
+            MapEffect(state.toateTraseele, state.indexTraseuSelectat, state.filtreState.arataTraficTraseu) { mapView ->
                 val style = mapView.getMapboxMap().getStyle()
                 val mapboxMap = mapView.getMapboxMap()
 
@@ -413,7 +414,7 @@ fun MapScreen(
                                 lineJoin(LineJoin.ROUND)
                             })
 
-                            if (selectat.traficGeoJson != null) {
+                            if (selectat.traficGeoJson != null && state.filtreState.arataTraficTraseu) {
                                 style.addSource(geoJsonSource(sursaId) {
                                     featureCollection(selectat.traficGeoJson)
                                 })
@@ -541,41 +542,43 @@ fun MapScreen(
             }
 
             // Efect pentru liniile scurte de tranzitie noapte
-            MapEffect(state.alerteNoapte) { mapView ->
+            MapEffect(state.alerteNoapte, state.filtreState.arataTranzitieZiNoapte) { mapView ->
                 mapView.getMapboxMap().getStyle { style ->
                     for (i in 0..10) {
                         if (style.styleLayerExists("strat-tranzitie-$i")) style.removeStyleLayer("strat-tranzitie-$i")
                         if (style.styleSourceExists("sursa-tranzitie-$i")) style.removeStyleSource("sursa-tranzitie-$i")
                     }
 
-                    state.alerteNoapte.forEachIndexed { index, alerta ->
-                        if (alerta.linieTranzitie != null) {
-                            val sursaId = "sursa-tranzitie-$index"
-                            val stratId = "strat-tranzitie-$index"
+                    if (state.filtreState.arataTranzitieZiNoapte) {
+                        state.alerteNoapte.forEachIndexed { index, alerta ->
+                            if (alerta.linieTranzitie != null) {
+                                val sursaId = "sursa-tranzitie-$index"
+                                val stratId = "strat-tranzitie-$index"
 
-                            val culoareHex = when (alerta.tip) {
-                                "Apus / Crepuscul Civil" -> "#FF9800"
-                                "Crepuscul Nautic"       -> "#3F51B5"
-                                "Crepuscul Astronomic"   -> "#1A237E"
-                                else                     -> "#000000"
+                                val culoareHex = when (alerta.tip) {
+                                    "Apus / Crepuscul Civil" -> "#FF9800"
+                                    "Crepuscul Nautic"       -> "#3F51B5"
+                                    "Crepuscul Astronomic"   -> "#1A237E"
+                                    else                     -> "#000000"
+                                }
+
+                                style.addSource(geoJsonSource(sursaId) {
+                                    geometry(alerta.linieTranzitie)
+                                })
+
+                                style.addLayer(lineLayer(stratId, sursaId) {
+                                    lineColor(android.graphics.Color.parseColor(culoareHex))
+                                    lineWidth(4.0)
+                                    lineDasharray(listOf(2.0, 2.0))
+                                })
                             }
-
-                            style.addSource(geoJsonSource(sursaId) {
-                                geometry(alerta.linieTranzitie)
-                            })
-
-                            style.addLayer(lineLayer(stratId, sursaId) {
-                                lineColor(android.graphics.Color.parseColor(culoareHex))
-                                lineWidth(4.0)
-                                lineDasharray(listOf(2.0, 2.0))
-                            })
                         }
                     }
                 }
             }
 
             // Efect pentru umbre (crepuscule + noapte)
-            MapEffect(state.umbraCivil, state.umbraNautic, state.umbraAstro, state.umbraNoapte) { mapView ->
+            MapEffect(state.umbraCivil, state.umbraNautic, state.umbraAstro, state.umbraNoapte, state.filtreState.arataUmbreZiNoapte) { mapView ->
                 mapView.getMapboxMap().getStyle { style ->
                     val straturi = listOf(
                         Triple("civil", state.umbraCivil, "#15000022"),
@@ -585,10 +588,13 @@ fun MapScreen(
                     )
 
                     for ((id, poligon, culoareHex) in straturi) {
-                        if (poligon != null) {
-                            val sursaId = "sursa-$id"
-                            val stratId = "strat-$id"
+                        val sursaId = "sursa-$id"
+                        val stratId = "strat-$id"
 
+                        if (!state.filtreState.arataUmbreZiNoapte) {
+                            if (style.styleLayerExists(stratId)) style.removeStyleLayer(stratId)
+                            if (style.styleSourceExists(sursaId)) style.removeStyleSource(sursaId)
+                        } else if (poligon != null) {
                             if (style.styleSourceExists(sursaId)) {
                                 val sursa = style.getSourceAs<com.mapbox.maps.extension.style.sources.generated.GeoJsonSource>(sursaId)
                                 sursa?.geometry(poligon)
@@ -623,7 +629,7 @@ fun MapScreen(
             }
 
             // Pin-uri Meteo
-            state.alerteMeteo.forEach { alerta ->
+            state.alerteMeteoVizibile.forEach { alerta ->
                 val (culoareFundal, iconitaAlesa) = when (alerta.tip) {
                     "Ploaie" -> Color(0xFF4287F5) to Icons.Default.WaterDrop
                     "Zăpadă" -> Color.Cyan to Icons.Default.AcUnit
@@ -664,7 +670,7 @@ fun MapScreen(
             }
 
             // Pin-uri Crepuscul / Noapte
-            state.alerteNoapte.forEach { alerta ->
+            state.alerteNoapteVizibile.forEach { alerta ->
                 val (culoareFundal, iconitaAlesa) = when (alerta.tip) {
                     "Apus / Crepuscul Civil" -> Color(0xFFFF9800) to Icons.Default.WbTwilight
                     "Crepuscul Nautic"       -> Color(0xFF3F51B5) to Icons.Default.Brightness3
@@ -1176,6 +1182,14 @@ fun MapScreen(
             TimerDialog(
                 state = state,
                 onDismiss = { state.showTimerDialog = false }
+            )
+        }
+
+        // Filter popup dialog
+        if (state.showFilterDialog) {
+            FilterDialog(
+                state = state,
+                onDismiss = { state.showFilterDialog = false }
             )
         }
 
