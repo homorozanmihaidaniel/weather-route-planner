@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -49,8 +51,19 @@ fun SearchBar(
                 leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "Căutare") },
                 trailingIcon = {
                     if (state.textCautat.isNotEmpty()) {
-                        IconButton(onClick = { state.textCautat = "" }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Șterge text")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val esteFav = state.esteFavorit(state.textCautat)
+                            IconButton(onClick = { state.comutaFavoritCurent() }) {
+                                Icon(
+                                    imageVector = if (esteFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = if (esteFav) "Elimină din favorite" else "Adaugă la favorite",
+                                    tint = if (esteFav) Color.Red else Color.Gray,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            IconButton(onClick = { state.textCautat = "" }) {
+                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Șterge text")
+                            }
                         }
                     }
                 },

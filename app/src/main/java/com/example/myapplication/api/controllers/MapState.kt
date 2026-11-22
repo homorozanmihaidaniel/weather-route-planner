@@ -12,7 +12,9 @@ import com.example.myapplication.BuildConfig
 import com.example.myapplication.application.interfaces.*
 import com.example.myapplication.application.services.*
 import com.example.myapplication.domain.entities.AlertaMeteo
+import com.example.myapplication.domain.entities.AppTab
 import com.example.myapplication.domain.entities.FiltreState
+import com.example.myapplication.domain.entities.LocatieFavorita
 import com.example.myapplication.domain.entities.RadarFrame
 import com.example.myapplication.domain.entities.TomTomIncident
 import com.example.myapplication.infrastructure.repositories.*
@@ -51,6 +53,7 @@ class MapState(
     private val context: Context,
     private val searchHistoryRepository: ISearchHistoryRepository,
     val weatherRepository: IWeatherRepository,
+    val favoritesRepository: IFavoritesRepository = SharedPrefsFavoritesRepository(context),
     val routeRepository: IRouteRepository = MapboxRouteRepositoryImpl(),
     val geocodingRepository: IGeocodingRepository = AndroidGeocodingRepositoryImpl(context),
     val scope: CoroutineScope,
@@ -116,6 +119,48 @@ class MapState(
     var baraEsteFocusata by mutableStateOf(false)
 
     var pozitiePin by mutableStateOf<Point?>(null)
+
+    // Navigație & Tab-uri
+    var tabCurent by mutableStateOf(AppTab.HARTA)
+
+    // Locații Favorite
+    var listaFavorite by mutableStateOf(favoritesRepository.getFavorites())
+
+    fun adaugaFavorit(titlu: String, adresa: String) {
+        if (adresa.isNotBlank()) {
+            val curatTitlu = if (titlu.isBlank()) adresa else titlu
+            val item = LocatieFavorita(
+                titlu = curatTitlu,
+                adresaSauNume = adresa.trim(),
+                latitudine = if (adresa == textCautat) pozitiePin?.latitude() else null,
+                longitudine = if (adresa == textCautat) pozitiePin?.longitude() else null
+            )
+            listaFavorite = favoritesRepository.addFavorite(item)
+        }
+    }
+
+    fun stergeFavorit(id: String) {
+        listaFavorite = favoritesRepository.removeFavorite(id)
+    }
+
+    fun comutaFavoritCurent() {
+        if (textCautat.isNotBlank()) {
+            if (favoritesRepository.isFavorite(textCautat)) {
+                val existent = listaFavorite.find {
+                    it.adresaSauNume.equals(textCautat, ignoreCase = true) || it.titlu.equals(textCautat, ignoreCase = true)
+                }
+                if (existent != null) {
+                    stergeFavorit(existent.id)
+                }
+            } else {
+                adaugaFavorit(textCautat, textCautat)
+            }
+        }
+    }
+
+    fun esteFavorit(query: String): Boolean {
+        return favoritesRepository.isFavorite(query)
+    }
 
     // Filtre Căutare & Hartă
     var filtreState by mutableStateOf(FiltreState())
@@ -555,16 +600,18 @@ fun rememberMapState(
     searchHistoryRepository: ISearchHistoryRepository,
     weatherRepository: IWeatherRepository,
     context: Context = LocalContext.current,
+    favoritesRepository: IFavoritesRepository = remember(context) { SharedPrefsFavoritesRepository(context) },
     routeRepository: IRouteRepository = remember { MapboxRouteRepositoryImpl() },
     geocodingRepository: IGeocodingRepository = remember(context) { AndroidGeocodingRepositoryImpl(context) },
     coroutineScope: CoroutineScope = rememberCoroutineScope()
 ): MapState {
-    return remember(mapViewportState, searchHistoryRepository, weatherRepository, routeRepository, geocodingRepository, coroutineScope, context) {
+    return remember(mapViewportState, searchHistoryRepository, weatherRepository, favoritesRepository, routeRepository, geocodingRepository, coroutineScope, context) {
         MapState(
             mapViewportState = mapViewportState,
             context = context,
             searchHistoryRepository = searchHistoryRepository,
             weatherRepository = weatherRepository,
+            favoritesRepository = favoritesRepository,
             routeRepository = routeRepository,
             geocodingRepository = geocodingRepository,
             scope = coroutineScope

@@ -110,6 +110,18 @@ O aplicație Android modernă, construită în **Kotlin** și **Jetpack Compose*
 
 ---
 
+### ⭐ 11. Bară de Navigare (Navbar) și Locații Favorite
+* **Funcționalitate:** Bară de navigare inferioară (Bottom Navigation Bar) Material 3 cu două secțiuni principale:
+  * 🗺️ **Hartă:** afișează ecranul principal cu harta, traseele, alertele meteo și simulările.
+  * ❤️ **Favorite:** ecran dedicat pentru gestionarea locațiilor favorite salvate (vizualizare, adăugare locație nouă, navigare directă, ștergere).
+* **Integrare căutare:** Când se caută o adresă în bara de căutare de pe hartă, utilizatorul poate salva instant locația la favorite apăsând pe pictograma de inimă.
+* **Comutare fluidă:** La selectarea unei locații din lista de favorite, aplicația comută automat pe tab-ul Hartă și calculează traseul optim către acea destinație.
+* **Implementare:**
+  * Componenta [FavoritesScreen.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/ui/components/FavoritesScreen.kt) și repo-ul persistent [SharedPrefsFavoritesRepository.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/infrastructure/repositories/SharedPrefsFavoritesRepository.kt).
+  * Gestionarea tab-urilor în [MainActivity.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/MainActivity.kt) prin intermediul `Scaffold` și `NavigationBar`.
+
+---
+
 ## 🛠️ Arhitectură și Structură Fișiere
 
 Aplicația respectă principiile programării declarative din Jetpack Compose și este structurată astfel:
