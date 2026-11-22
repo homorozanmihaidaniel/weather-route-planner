@@ -109,4 +109,95 @@ object SunCalculator {
 
         return azimuthSoare + 90.0
     }
+
+    fun calculeazaLongitudineMiezulNoptii(timpMs: Long = System.currentTimeMillis()): Double {
+        val calendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+        calendar.timeInMillis = timpMs
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        val second = calendar.get(Calendar.SECOND)
+        val millisecond = calendar.get(Calendar.MILLISECOND)
+
+        val utcHoursExact = hour + (minute / 60.0) + (second / 3600.0) + (millisecond / 3600000.0)
+        var lon = -(utcHoursExact * 15.0)
+        while (lon < -180.0) lon += 360.0
+        while (lon > 180.0) lon -= 360.0
+        return lon
+    }
+
+    fun genereazaZonaMiezulNoptii(lon: Double): List<Polygon> {
+        val west = lon - 7.5
+        val east = lon + 7.5
+        return if (west < -180.0) {
+            val p1 = Polygon.fromLngLats(listOf(listOf(
+                Point.fromLngLat(-180.0, -85.0),
+                Point.fromLngLat(east, -85.0),
+                Point.fromLngLat(east, 85.0),
+                Point.fromLngLat(-180.0, 85.0),
+                Point.fromLngLat(-180.0, -85.0)
+            )))
+            val p2 = Polygon.fromLngLats(listOf(listOf(
+                Point.fromLngLat(west + 360.0, -85.0),
+                Point.fromLngLat(180.0, -85.0),
+                Point.fromLngLat(180.0, 85.0),
+                Point.fromLngLat(west + 360.0, 85.0),
+                Point.fromLngLat(west + 360.0, -85.0)
+            )))
+            listOf(p1, p2)
+        } else if (east > 180.0) {
+            val p1 = Polygon.fromLngLats(listOf(listOf(
+                Point.fromLngLat(west, -85.0),
+                Point.fromLngLat(180.0, -85.0),
+                Point.fromLngLat(180.0, 85.0),
+                Point.fromLngLat(west, 85.0),
+                Point.fromLngLat(west, -85.0)
+            )))
+            val p2 = Polygon.fromLngLats(listOf(listOf(
+                Point.fromLngLat(-180.0, -85.0),
+                Point.fromLngLat(east - 360.0, -85.0),
+                Point.fromLngLat(east - 360.0, 85.0),
+                Point.fromLngLat(-180.0, 85.0),
+                Point.fromLngLat(-180.0, -85.0)
+            )))
+            listOf(p1, p2)
+        } else {
+            listOf(
+                Polygon.fromLngLats(listOf(listOf(
+                    Point.fromLngLat(west, -85.0),
+                    Point.fromLngLat(east, -85.0),
+                    Point.fromLngLat(east, 85.0),
+                    Point.fromLngLat(west, 85.0),
+                    Point.fromLngLat(west, -85.0)
+                )))
+            )
+        }
+    }
+
+    fun getDescriereRegiuneMiezulNoptii(lon: Double): String {
+        return when {
+            lon in 165.0..180.0 || lon in -180.0..-172.5 -> "Noua Zeelandă, Fiji, Kiribati (UTC+12 / +13)"
+            lon in 142.5..165.0 -> "Australia de Est (Sydney, Melbourne), Vladivostok (UTC+10 / +11)"
+            lon in 127.5..142.5 -> "Japonia (Tokyo), Coreea de Sud (Seul) (UTC+9)"
+            lon in 112.5..127.5 -> "China (Beijing), Singapore, Hong Kong (UTC+8)"
+            lon in 97.5..112.5 -> "Thailanda (Bangkok), Vietnam, Indonezia (UTC+7)"
+            lon in 82.5..97.5 -> "Bangladesh, Kazahstan (Almaty) (UTC+6)"
+            lon in 67.5..82.5 -> "India (New Delhi, Mumbai), Pakistan (UTC+5 / +5:30)"
+            lon in 52.5..67.5 -> "Emiratele Arabe (Dubai), Oman, Baku (UTC+4)"
+            lon in 37.5..52.5 -> "Moscova, Arabia Saudită, Turcia de Est (UTC+3)"
+            lon in 22.5..37.5 -> "România (București), Grecia, Ucraina, Finlanda, Egipt (UTC+2)"
+            lon in 7.5..22.5 -> "Europa Centrală (Germania, Italia, Franța, Spania) (UTC+1)"
+            lon in -7.5..7.5 -> "Marea Britanie (Londra), Portugalia, Ghana (UTC+0)"
+            lon in -22.5..-7.5 -> "Insulele Azore, Capul Verde (UTC-1)"
+            lon in -37.5..-22.5 -> "Atlanticul Central, Groenlanda de Sud (UTC-2)"
+            lon in -52.5..-37.5 -> "Brazilia (Rio de Janeiro, São Paulo), Argentina (UTC-3)"
+            lon in -67.5..-52.5 -> "America de Sud (Santiago, Caracas) (UTC-4)"
+            lon in -82.5..-67.5 -> "Coasta de Est SUA (New York, Miami, Washington) (UTC-5)"
+            lon in -97.5..-82.5 -> "Centrul SUA (Chicago, Dallas), Mexic (UTC-6)"
+            lon in -112.5..-97.5 -> "Zona Munților Stâncoși SUA (Denver) (UTC-7)"
+            lon in -127.5..-112.5 -> "Coasta de Vest SUA (Los Angeles, San Francisco) (UTC-8)"
+            lon in -142.5..-127.5 -> "Alaska (Anchorage) (UTC-9)"
+            lon in -157.5..-142.5 -> "Hawaii (Honolulu), Polinezia Franceză (UTC-10)"
+            else -> "Samoa Americană, Insulele Midway (UTC-11)"
+        }
+    }
 }

@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -96,6 +97,7 @@ fun MapScreen(
             state.umbraNautic = SunCalculator.calculeazaUmbra(-6.0)    // Crepuscul Nautic
             state.umbraAstro = SunCalculator.calculeazaUmbra(-12.0)    // Crepuscul Astronomic
             state.umbraNoapte = SunCalculator.calculeazaUmbra(-18.0)   // Noapte deplină
+            state.actualizeazaMiezulNoptii()
             delay(15_000L)
         }
     }
@@ -113,6 +115,7 @@ fun MapScreen(
 
     // 1c. Actualizare cadru radar activ în funcție de slider-ul din trecut
     LaunchedEffect(state.valoareScrubbingSecunde, state.radarFrames, state.modScrubbingActiv) {
+        state.actualizeazaMiezulNoptii()
         val frames = state.radarFrames
         if (frames.isNotEmpty()) {
             if (state.modScrubbingActiv && state.valoareScrubbingSecunde < 0) {
@@ -611,6 +614,107 @@ fun MapScreen(
                 }
             }
 
+            // Efect pentru Linia și Zona Miezul Nopții (Ora 00:00 / Anul Nou pe glob)
+            MapEffect(state.filtreState.arataMiezulNoptii, state.longitudineMiezulNoptii) { mapView ->
+                val style = mapView.getMapboxMap().getStyle()
+                if (style != null) {
+                    val sursaLinieId = "sursa-linie-miezul-noptii"
+                    val stratLinieId = "strat-linie-miezul-noptii"
+                    val sursaBorduraLinieId = "sursa-bordura-linie-miezul-noptii"
+                    val stratBorduraLinieId = "strat-bordura-linie-miezul-noptii"
+
+                    for (i in 0..2) {
+                        val sId = "sursa-zona-miezul-noptii-$i"
+                        val lId = "strat-zona-miezul-noptii-$i"
+                        if (style.styleLayerExists(lId)) style.removeStyleLayer(lId)
+                        if (style.styleSourceExists(sId)) style.removeStyleSource(sId)
+                    }
+
+                    if (style.styleLayerExists(stratLinieId)) style.removeStyleLayer(stratLinieId)
+                    if (style.styleSourceExists(sursaLinieId)) style.removeStyleSource(sursaLinieId)
+                    if (style.styleLayerExists(stratBorduraLinieId)) style.removeStyleLayer(stratBorduraLinieId)
+                    if (style.styleSourceExists(sursaBorduraLinieId)) style.removeStyleSource(sursaBorduraLinieId)
+
+                    if (state.filtreState.arataMiezulNoptii) {
+                        val lon = state.longitudineMiezulNoptii
+
+                        // 1. Zona / Fusul orar de 1 oră la miezul nopții
+                        val zonePoligoane = SunCalculator.genereazaZonaMiezulNoptii(lon)
+                        zonePoligoane.forEachIndexed { idx, polygon ->
+                            val sId = "sursa-zona-miezul-noptii-$idx"
+                            val lId = "strat-zona-miezul-noptii-$idx"
+                            style.addSource(geoJsonSource(sId) {
+                                geometry(polygon)
+                            })
+                            style.addLayer(fillLayer(lId, sId) {
+                                fillColor(android.graphics.Color.parseColor("#35FFD700"))
+                                fillOutlineColor(android.graphics.Color.parseColor("#90FFD700"))
+                            })
+                        }
+
+                        // 2. Linia centrală exactă a miezului nopții (00:00)
+                        val linieGeometry = LineString.fromLngLats(listOf(
+                            Point.fromLngLat(lon, -85.0),
+                            Point.fromLngLat(lon, 85.0)
+                        ))
+
+                        // Glow / Bordură exterioară caldă
+                        style.addSource(geoJsonSource(sursaBorduraLinieId) {
+                            geometry(linieGeometry)
+                        })
+                        style.addLayer(lineLayer(stratBorduraLinieId, sursaBorduraLinieId) {
+                            lineColor(android.graphics.Color.parseColor("#80FFA000"))
+                            lineWidth(7.0)
+                        })
+
+                        // Linia principală auriu intens
+                        style.addSource(geoJsonSource(sursaLinieId) {
+                            geometry(linieGeometry)
+                        })
+                        style.addLayer(lineLayer(stratLinieId, sursaLinieId) {
+                            lineColor(android.graphics.Color.parseColor("#FFD700"))
+                            lineWidth(3.5)
+                            lineDasharray(listOf(3.0, 1.5))
+                        })
+                    }
+                }
+            }
+
+            // Pin indicator pe linia Miezului Nopții (la Ecuator)
+            if (state.filtreState.arataMiezulNoptii) {
+                ViewAnnotation(
+                    options = viewAnnotationOptions {
+                        geometry(Point.fromLngLat(state.longitudineMiezulNoptii, 0.0))
+                        allowOverlap(true)
+                    }
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFFFD700),
+                        shadowElevation = 4.dp
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Celebration,
+                                contentDescription = null,
+                                tint = Color(0xFF5D4037),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Ora 00:00 (Anul Nou)",
+                                color = Color(0xFF3E2723),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+            }
+
             // Pin destinatie
             if (state.pozitiePin != null) {
                 ViewAnnotation(
@@ -899,6 +1003,58 @@ fun MapScreen(
                     permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                 }
             )
+
+            // Info Card pentru Ora 00:00 (Miezul Nopții / Anul Nou)
+            if (state.filtreState.arataMiezulNoptii && !state.baraEsteFocusata) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1).copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFFD700),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Celebration,
+                                    contentDescription = null,
+                                    tint = Color(0xFF5D4037),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Ora 00:00 (Anul Nou) este acum în:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.DarkGray
+                            )
+                            Text(
+                                text = state.descriereRegiuneMiezulNoptii,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = state.timpPanaLaMiezulNoptiiLocalText,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF1976D2)
+                            )
+                        }
+                    }
+                }
+            }
 
             // Afișăm rutele alternative dacă există
             if (state.toateTraseele.isNotEmpty()) {

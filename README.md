@@ -102,6 +102,7 @@ O aplicație Android modernă, construită în **Kotlin** și **Jetpack Compose*
   * 🌙 **Tranziție Zi / Noapte:** afișare/ascundere pini și linii de crepuscul și noapte pe traseu.
   * 🌧️ **Radar Precipitații:** activare/dezactivare strat radar dinamic RainViewer.
   * 🌍 **Umbră Planetară:** afișare/dezactivare poligoane de noapte pe glob.
+  * 🎆 **Unde este ora 00:00 (Miezul Nopții / Anul Nou pe glob):** linie aurie strălucitoare și bandă a fusului orar de 1h care urmăresc în timp real unde se trece în noul an pe glob, însoțite de un card informativ cu regiunea curentă și numărătoarea inversă până când Anul Nou ajunge la tine.
 * **Butoane rapide:** Opțiuni de "Activează tot" și "Dezactivează tot" plus badge dinamic pe butonul de filtre care indică numărul de categorii active.
 * **Implementare:**
   * Modelul de date [FiltreState.kt](file:///D:/Android_studio_projects/app/src/main/java/com/example/myapplication/domain/entities/FiltreState.kt).

@@ -327,6 +327,46 @@ fun FilterDialog(
                         )
                     }
                 }
+
+                // 7. LINIE & ZONĂ ORA 00:00 (MIEZUL NOPȚII / ANUL NOU)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Celebration, contentDescription = null, tint = Color(0xFFFFB300))
+                            Column {
+                                Text(
+                                    text = "Unde este ora 00:00 (Anul Nou)",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = "Linie aurie și zonă pe glob ce arată miezul nopții în timp real",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = state.filtreState.arataMiezulNoptii,
+                            onCheckedChange = { activ ->
+                                state.filtreState = state.filtreState.copy(arataMiezulNoptii = activ)
+                            }
+                        )
+                    }
+                }
             }
         },
         confirmButton = {

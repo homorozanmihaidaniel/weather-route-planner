@@ -74,21 +74,10 @@ class MapState(
     var toateIncidenteleTomTom by mutableStateOf<List<TomTomIncident>>(emptyList())
     var incidenteTomTom by mutableStateOf<List<TomTomIncident>>(emptyList())
 
-    init {
-        actualizeazaRainbowSnapshot()
-    }
-
-    fun actualizeazaRainbowSnapshot() {
-        val apiKey = BuildConfig.RAINBOW_API_KEY
-        if (apiKey.isNotBlank() && apiKey != "your_rainbow_api_key_here") {
-            scope.launch(Dispatchers.IO) {
-                val snapshot = weatherRepository.getRainbowSnapshot(apiKey)
-                withContext(Dispatchers.Main) {
-                    rainbowSnapshotTimestamp = snapshot
-                }
-            }
-        }
-    }
+    // Linia și Zona Miezul Nopții (Ora 00:00 / Anul Nou pe glob)
+    var longitudineMiezulNoptii by mutableStateOf(0.0)
+    var descriereRegiuneMiezulNoptii by mutableStateOf("")
+    var timpPanaLaMiezulNoptiiLocalText by mutableStateOf("")
 
     // UI States (General)
     var showTimerDialog by mutableStateOf(false)
@@ -125,6 +114,57 @@ class MapState(
 
     // Locații Favorite
     var listaFavorite by mutableStateOf(favoritesRepository.getFavorites())
+
+    // Filtre Căutare & Hartă
+    var filtreState by mutableStateOf(FiltreState())
+    var showFilterDialog by mutableStateOf(false)
+    var ultimeleGeometriiRute by mutableStateOf<List<LineString>>(emptyList())
+
+    init {
+        actualizeazaRainbowSnapshot()
+        actualizeazaMiezulNoptii()
+    }
+
+    fun actualizeazaMiezulNoptii() {
+        val isScrubbing = try { modScrubbingActiv } catch (e: Throwable) { false }
+        val scrubSec = try { valoareScrubbingSecunde } catch (e: Throwable) { 0.0 }
+        val timpEfectiv = if (isScrubbing) {
+            System.currentTimeMillis() + (scrubSec * 1000).toLong()
+        } else {
+            System.currentTimeMillis()
+        }
+        val lon = SunCalculator.calculeazaLongitudineMiezulNoptii(timpEfectiv)
+        longitudineMiezulNoptii = lon
+        descriereRegiuneMiezulNoptii = SunCalculator.getDescriereRegiuneMiezulNoptii(lon)
+
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = timpEfectiv
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        val minute = cal.get(Calendar.MINUTE)
+        val second = cal.get(Calendar.SECOND)
+        val secCurente = hour * 3600 + minute * 60 + second
+        val secRamase = (86400 - secCurente) % 86400
+        val ore = secRamase / 3600
+        val min = (secRamase % 3600) / 60
+
+        timpPanaLaMiezulNoptiiLocalText = when {
+            ore == 0 && min == 0 -> "🎉 La mulți ani! Miezul nopții (00:00) a sosit la tine!"
+            ore > 0 -> "Timp până la 00:00 la tine: $ore h $min min"
+            else -> "Timp până la 00:00 la tine: $min min"
+        }
+    }
+
+    fun actualizeazaRainbowSnapshot() {
+        val apiKey = BuildConfig.RAINBOW_API_KEY
+        if (apiKey.isNotBlank() && apiKey != "your_rainbow_api_key_here") {
+            scope.launch(Dispatchers.IO) {
+                val snapshot = weatherRepository.getRainbowSnapshot(apiKey)
+                withContext(Dispatchers.Main) {
+                    rainbowSnapshotTimestamp = snapshot
+                }
+            }
+        }
+    }
 
     fun adaugaFavorit(titlu: String, adresa: String) {
         val cleanAdresa = adresa.trim()
@@ -167,11 +207,6 @@ class MapState(
             it.adresaSauNume.trim().equals(clean, ignoreCase = true) || it.titlu.trim().equals(clean, ignoreCase = true)
         }
     }
-
-    // Filtre Căutare & Hartă
-    var filtreState by mutableStateOf(FiltreState())
-    var showFilterDialog by mutableStateOf(false)
-    var ultimeleGeometriiRute by mutableStateOf<List<LineString>>(emptyList())
 
     val alerteMeteoVizibile: List<AlertaMeteo>
         get() = if (filtreState.arataAlerteMeteo) alerteMeteo else emptyList()

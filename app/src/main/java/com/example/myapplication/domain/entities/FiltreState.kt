@@ -17,15 +17,18 @@ data class FiltreState(
     val arataRadarPrecipitatii: Boolean = true,
 
     // 6. Umbre Solare Zi / Noapte (poligoanele de umbră planetară pe glob)
-    val arataUmbreZiNoapte: Boolean = true
+    val arataUmbreZiNoapte: Boolean = true,
+
+    // 7. Linie & Zonă Ora 00:00 (Miezul Nopții / Anul Nou pe glob)
+    val arataMiezulNoptii: Boolean = true
 ) {
     val areFiltreActive: Boolean
         get() = arataAlerteMeteo || arataIncidenteTrafic || arataTraficTraseu ||
-                arataTranzitieZiNoapte || arataRadarPrecipitatii || arataUmbreZiNoapte
+                arataTranzitieZiNoapte || arataRadarPrecipitatii || arataUmbreZiNoapte || arataMiezulNoptii
 
     val toateFiltreleActive: Boolean
         get() = arataAlerteMeteo && arataIncidenteTrafic &&
-                arataTraficTraseu && arataTranzitieZiNoapte && arataRadarPrecipitatii && arataUmbreZiNoapte
+                arataTraficTraseu && arataTranzitieZiNoapte && arataRadarPrecipitatii && arataUmbreZiNoapte && arataMiezulNoptii
 
     val numarFiltreActive: Int
         get() {
@@ -36,10 +39,11 @@ data class FiltreState(
             if (arataTranzitieZiNoapte) count++
             if (arataRadarPrecipitatii) count++
             if (arataUmbreZiNoapte) count++
+            if (arataMiezulNoptii) count++
             return count
         }
 
-    val totalCategorii: Int = 6
+    val totalCategorii: Int = 7
 
     fun cuToateActive(activ: Boolean): FiltreState {
         return FiltreState(
@@ -48,7 +52,8 @@ data class FiltreState(
             arataTraficTraseu = activ,
             arataTranzitieZiNoapte = activ,
             arataRadarPrecipitatii = activ,
-            arataUmbreZiNoapte = activ
+            arataUmbreZiNoapte = activ,
+            arataMiezulNoptii = activ
         )
     }
 }

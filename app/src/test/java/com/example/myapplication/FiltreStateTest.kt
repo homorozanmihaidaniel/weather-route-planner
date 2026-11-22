@@ -11,13 +11,14 @@ class FiltreStateTest {
         val filtre = FiltreState()
         assertTrue(filtre.toateFiltreleActive)
         assertTrue(filtre.areFiltreActive)
-        assertEquals(6, filtre.numarFiltreActive)
+        assertEquals(7, filtre.numarFiltreActive)
         assertTrue(filtre.arataAlerteMeteo)
         assertTrue(filtre.arataIncidenteTrafic)
         assertTrue(filtre.arataTraficTraseu)
         assertTrue(filtre.arataTranzitieZiNoapte)
         assertTrue(filtre.arataRadarPrecipitatii)
         assertTrue(filtre.arataUmbreZiNoapte)
+        assertTrue(filtre.arataMiezulNoptii)
     }
 
     @Test
@@ -32,6 +33,7 @@ class FiltreStateTest {
         assertFalse(filtre.arataTranzitieZiNoapte)
         assertFalse(filtre.arataRadarPrecipitatii)
         assertFalse(filtre.arataUmbreZiNoapte)
+        assertFalse(filtre.arataMiezulNoptii)
     }
 
     @Test
@@ -40,19 +42,21 @@ class FiltreStateTest {
         val activated = deactivated.cuToateActive(true)
         assertTrue(activated.toateFiltreleActive)
         assertTrue(activated.areFiltreActive)
-        assertEquals(6, activated.numarFiltreActive)
+        assertEquals(7, activated.numarFiltreActive)
     }
 
     @Test
     fun categoryToggle_updatesCorrectly() {
         val filtre = FiltreState().copy(
             arataAlerteMeteo = false,
-            arataIncidenteTrafic = true
+            arataIncidenteTrafic = true,
+            arataMiezulNoptii = true
         )
         assertFalse(filtre.toateFiltreleActive)
         assertTrue(filtre.areFiltreActive)
         assertFalse(filtre.arataAlerteMeteo)
         assertTrue(filtre.arataIncidenteTrafic)
-        assertEquals(5, filtre.numarFiltreActive)
+        assertTrue(filtre.arataMiezulNoptii)
+        assertEquals(6, filtre.numarFiltreActive)
     }
 }
